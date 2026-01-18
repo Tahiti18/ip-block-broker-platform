@@ -1,6 +1,6 @@
 import { Lead, JobRun, JobType, LeadStage, JobStatus } from '../types';
 
-// Use VITE_API_URL from environment or fallback to local for dev
+// Use the Railway backend URL from environment variables
 const API_BASE = (import.meta as any).env?.VITE_API_URL || '';
 
 export interface Metrics {
@@ -34,10 +34,10 @@ class ApiService {
           ...options?.headers 
         },
       });
-      if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+      if (!response.ok) throw new Error(`API Connection Failed: ${response.statusText}`);
       return response.json();
     } catch (error) {
-      console.warn("API Failure - Falling back to demo mode:", error);
+      console.warn("API Node Unreachable - Activating Demo Simulation:", error);
       this.isDemoMode = true;
       return this.getMockResponse(path);
     }
@@ -47,22 +47,20 @@ class ApiService {
     if (path.includes('/health')) return { status: 'demo', database: 'connected', redis: 'connected', worker: 'active' };
     if (path.includes('/metrics')) return {
       totalInventoryIps: 16777216,
-      activeLeads: 42,
-      conversionRate: 12.8,
-      pipelineValueUsd: 838860800,
-      inventoryTrend30d: 5.2,
+      activeLeads: 48,
+      conversionRate: 15.2,
+      pipelineValueUsd: 922746880,
+      inventoryTrend30d: 4.8,
       urgentFollowups: [],
       routingShifts24h: 12,
-      newCandidates24h: 4
+      newCandidates24h: 5
     };
     if (path.includes('/leads/')) return {
-      id: 'L-771', orgName: 'Demo Corp', cidr: '8.0.0.0/8', size: 16777216, score: 95, 
-      stage: LeadStage.FOUND, owner: 'System', nextActionDate: '2024-12-01', 
-      lastUpdated: new Date().toISOString(), scoreBreakdown: { size: 10, legacy: 10, utilization: 8, orgChange: 9, reputation: 10, transfer: 10 }
+        id: 'DEMO-88', orgName: 'Legacy Research Institute', cidr: '12.0.0.0/8', size: 16777216, score: 92, 
+        stage: LeadStage.FOUND, owner: 'System', nextActionDate: '2025-01-25', 
+        lastUpdated: new Date().toISOString(), scoreBreakdown: { size: 10, legacy: 10, utilization: 8, orgChange: 9, reputation: 10, transfer: 10 }
     };
-    if (path.includes('/jobs')) return [];
-    if (path.includes('/leads')) return [];
-    return {};
+    return [];
   }
 
   async getHealth(): Promise<SystemHealth> { return this.fetchJson('/api/health'); }

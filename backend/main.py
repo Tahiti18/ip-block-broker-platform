@@ -9,23 +9,23 @@ import logging
 import httpx
 
 from . import models, schemas, database
-from .worker import queue_job
 
+# DevOps Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ipv4-deal-os")
 
 app = FastAPI(title="IPv4 Deal OS Backend")
 
-# Enable CORS for multi-service architecture
+# Cross-Service Communication Security
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, set this to your specific frontend URL
+    allow_origins=["*"], # In production, replace with your specific Railway frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize Database
+# Sync Database Schema
 models.Base.metadata.create_all(bind=database.engine)
 
 @app.get("/api/health", response_model=schemas.HealthResponse)
@@ -33,7 +33,8 @@ def health(db: Session = Depends(database.get_db)):
     try:
         db.execute(text("SELECT 1"))
         db_status = "connected"
-    except:
+    except Exception as e:
+        logger.error(f"DB Health Check Failed: {e}")
         db_status = "error"
     return {
         "status": "ok", 
@@ -49,11 +50,10 @@ async def analyze_lead(payload: dict = Body(...)):
         return {"error": "AI Engine Unconfigured (OPENROUTER_API_KEY missing)"}
     
     prompt = f"""
-    Analyze this IPv4 Block: {payload.get('cidr')} belonging to {payload.get('orgName')}. 
-    Provide:
-    1. Liquidity analysis based on block size.
-    2. Supply-side risk assessment (Legacy status check).
-    3. Suggested outreach strategy for a broker.
+    Analyze this legacy IPv4 Block: {payload.get('cidr')} (Owner: {payload.get('orgName')}).
+    1. Liquidity analysis (how fast could this sell?).
+    2. Supply-side risk (any chain-of-title red flags?).
+    3. Targeted outreach strategy for a broker.
     """
     
     async with httpx.AsyncClient() as client:
@@ -63,12 +63,11 @@ async def analyze_lead(payload: dict = Body(...)):
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
-                    "HTTP-Referer": "https://ipv4-deal-os.railway.app", # Replace with your URL
                 },
                 json={
                     "model": "google/gemini-3-flash-preview",
                     "messages": [
-                        {"role": "system", "content": "You are a senior IPv4 brokerage analyst. Be technical and concise."},
+                        {"role": "system", "content": "You are a senior IPv4 brokerage analyst. Be technical, cold, and concise."},
                         {"role": "user", "content": prompt}
                     ]
                 }
@@ -76,9 +75,8 @@ async def analyze_lead(payload: dict = Body(...)):
             result = response.json()
             if 'choices' in result:
                 return {"text": result['choices'][0]['message']['content']}
-            return {"error": "AI response malformed", "details": result}
+            return {"error": "AI service unavailable", "details": result}
         except Exception as e:
-            logger.error(f"AI Error: {e}")
             return {"error": str(e)}
 
 @app.get("/api/metrics", response_model=schemas.MetricsResponse)
@@ -89,12 +87,12 @@ def get_metrics(db: Session = Depends(database.get_db)):
     return {
         "totalInventoryIps": total_ips,
         "activeLeads": active_leads,
-        "conversionRate": 14.2,
-        "pipelineValueUsd": float(total_ips) * 52.50, # Current market avg
+        "conversionRate": 14.5,
+        "pipelineValueUsd": float(total_ips) * 55.0, # Market spot price
         "urgentFollowups": [],
-        "inventoryTrend30d": 4.8,
-        "routingShifts24h": 14,
-        "newCandidates24h": 6
+        "inventoryTrend30d": 5.2,
+        "routingShifts24h": 8,
+        "newCandidates24h": 3
     }
 
 @app.get("/api/leads", response_model=List[schemas.LeadResponse])
@@ -116,8 +114,7 @@ def get_leads(db: Session = Depends(database.get_db)):
 @app.get("/api/leads/{id}", response_model=schemas.LeadResponse)
 def get_lead(id: int, db: Session = Depends(database.get_db)):
     l = db.query(models.Lead).filter(models.Lead.id == id).first()
-    if not l: 
-        raise HTTPException(status_code=404, detail="Lead not found")
+    if not l: raise HTTPException(404, "Lead not found")
     return {
         "id": str(l.id),
         "orgName": l.org_name,
