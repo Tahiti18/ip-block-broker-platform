@@ -1,7 +1,8 @@
 
 import { Lead, JobRun, JobType, LeadStage, JobStatus } from '../types';
 
-const API_BASE = '/api';
+// Use env variable or fallback to same-domain proxy
+const API_BASE = (import.meta as any).env?.VITE_API_URL || '';
 
 export interface Metrics {
   totalInventoryIps: number;
@@ -10,6 +11,8 @@ export interface Metrics {
   pipelineValueUsd: number;
   inventoryTrend30d: number;
   urgentFollowups: Lead[];
+  routingShifts24h: number;
+  newCandidates24h: number;
 }
 
 export interface SystemHealth {
@@ -19,138 +22,103 @@ export interface SystemHealth {
   worker: string;
 }
 
-const MOCK_LEADS: Lead[] = [
-  {
-    id: 'L-8821',
-    orgName: 'Global Transit Corp',
-    cidr: '12.0.0.0/8',
-    size: 16777216,
-    score: 94,
-    stage: LeadStage.FOUND,
-    owner: 'Admin',
-    nextActionDate: new Date().toLocaleDateString(),
-    lastUpdated: new Date().toISOString(),
-    scoreBreakdown: {
-      size: 95,
-      legacy: 100,
-      utilization: 15,
-      orgChange: 80,
-      reputation: 98,
-      transfer: 90
-    }
-  },
-  {
-    id: 'L-4412',
-    orgName: 'Legacy Systems Inc',
-    cidr: '44.128.0.0/16',
-    size: 65536,
-    score: 78,
-    stage: LeadStage.VERIFIED,
-    owner: 'Admin',
-    nextActionDate: new Date(Date.now() + 86400000).toLocaleDateString(),
-    lastUpdated: new Date().toISOString(),
-    scoreBreakdown: {
-      size: 60,
-      legacy: 100,
-      utilization: 40,
-      orgChange: 50,
-      reputation: 95,
-      transfer: 85
-    }
-  }
-];
-
 class ApiService {
   private isDemoMode = false;
 
   private async fetchJson(path: string, options?: RequestInit) {
     if (this.isDemoMode) return this.getMockResponse(path);
-
     try {
       const response = await fetch(`${API_BASE}${path}`, {
         ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          ...options?.headers,
-        },
+        headers: { 'Content-Type': 'application/json', ...options?.headers },
       });
-
-      if (!response.ok) {
-        // If the backend returns 404 (File not found) or 500, trigger Demo Mode
-        console.warn(`Backend responded with ${response.status}. Switching to Demo Mode.`);
-        this.isDemoMode = true;
-        return this.getMockResponse(path);
-      }
+      if (!response.ok) throw new Error('API Error');
       return response.json();
     } catch (error) {
-      console.warn("API Connection failed. Falling back to Demo Mode.", error);
+      console.warn("API Switch: Demo Mode Active", error);
       this.isDemoMode = true;
       return this.getMockResponse(path);
     }
   }
 
   private getMockResponse(path: string): any {
-    if (path === '/health') return { status: 'demo', database: 'connected', redis: 'connected', worker: 'active' };
-    if (path === '/metrics') return {
+    if (path.includes('/health')) return { status: 'demo', database: 'connected', redis: 'connected', worker: 'active' };
+    if (path.includes('/metrics')) return {
       totalInventoryIps: 16842752,
-      activeLeads: 2,
-      conversionRate: 12.5,
+      activeLeads: 24,
+      conversionRate: 14.5,
       pipelineValueUsd: 842137600,
       inventoryTrend30d: 4.2,
-      urgentFollowups: [MOCK_LEADS[0]]
+      urgentFollowups: [],
+      routingShifts24h: 8,
+      newCandidates24h: 3
     };
-    if (path === '/leads') return MOCK_LEADS;
-    if (path.startsWith('/leads/')) {
-        const id = path.split('/').pop();
-        return MOCK_LEADS.find(l => l.id === id) || MOCK_LEADS[0];
+    // Mock response for jobs request to resolve Jobs.tsx data requirements
+    if (path.includes('/jobs')) return [
+      {
+        id: '9921',
+        type: JobType.FULL_PIPELINE,
+        status: JobStatus.RUNNING,
+        startedAt: new Date(Date.now() - 600000).toISOString(),
+        progress: 65,
+        logs: ['Initializing session...', 'RIR Delta Scan: 14%']
+      },
+      {
+        id: '9920',
+        type: JobType.RDAP_INGESTION,
+        status: JobStatus.SUCCESS,
+        startedAt: new Date(Date.now() - 3600000).toISOString(),
+        finishedAt: new Date(Date.now() - 3400000).toISOString(),
+        progress: 100,
+        logs: ['Scan complete', 'Persisted 1,402 new blocks']
+      }
+    ];
+    // Mock response for individual lead detail to support LeadDetail.tsx rendering
+    if (path.includes('/leads/')) {
+      return {
+        id: 'L-7712',
+        orgName: 'Amalgamated Research Ltd',
+        cidr: '128.0.0.0/16',
+        size: 65536,
+        score: 88,
+        stage: LeadStage.FOUND,
+        owner: 'System',
+        nextActionDate: '2024-11-12',
+        lastUpdated: new Date().toISOString(),
+        scoreBreakdown: { size: 8, legacy: 10, utilization: 7, orgChange: 9, reputation: 9, transfer: 10 }
+      };
     }
-    if (path === '/jobs/status') return [{
-      id: 'DEMO-JOB',
-      type: JobType.RDAP_INGESTION,
-      status: JobStatus.SUCCESS,
-      startedAt: new Date().toISOString(),
-      progress: 100,
-      logs: ['[System] Demo mode initialized', '[RDAP] Successfully parsed mock bootstrap', '[Info] UI ready for preview']
-    }];
+    if (path.includes('/leads')) return [];
     return {};
   }
 
-  async getHealth(): Promise<SystemHealth> {
-    return this.fetchJson('/health');
-  }
-
-  async getMetrics(): Promise<Metrics> {
-    return this.fetchJson('/metrics');
-  }
-
-  async getLeads(): Promise<Lead[]> {
-    return this.fetchJson('/leads');
-  }
-
-  async getLead(id: string): Promise<Lead> {
-    return this.fetchJson(`/leads/${id}`);
-  }
-
+  async getHealth(): Promise<SystemHealth> { return this.fetchJson('/api/health'); }
+  async getMetrics(): Promise<Metrics> { return this.fetchJson('/api/metrics'); }
+  async getLeads(): Promise<Lead[]> { return this.fetchJson('/api/leads'); }
+  async getLead(id: string): Promise<Lead> { return this.fetchJson(`/api/leads/${id}`); }
   async updateLead(id: string, updates: Partial<Lead>): Promise<Lead> {
-    return this.fetchJson(`/leads/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(updates),
-    });
+    return this.fetchJson(`/api/leads/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
   }
 
-  async getJobs(): Promise<JobRun[]> {
-    return this.fetchJson('/jobs/status');
+  // Added getJobs method to resolve error in Jobs.tsx line 14
+  async getJobs(): Promise<JobRun[]> { 
+    return this.fetchJson('/api/jobs'); 
   }
 
+  // Added startJob method to resolve error in Jobs.tsx line 27
   async startJob(type: JobType): Promise<JobRun> {
-    return this.fetchJson('/jobs/run', {
-      method: 'POST',
-      body: JSON.stringify({ job_type: type }),
+    return this.fetchJson('/api/jobs', { 
+      method: 'POST', 
+      body: JSON.stringify({ type }) 
     });
   }
 
-  async seedDemoData(): Promise<void> {
-    this.isDemoMode = true;
+  async analyzeLead(lead: Lead): Promise<string> {
+    const res = await this.fetchJson('/api/ai/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ cidr: lead.cidr, orgName: lead.orgName })
+    });
+    return res.text || res.error || "Analysis unavailable.";
   }
 }
 
