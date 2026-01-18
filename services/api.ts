@@ -1,6 +1,11 @@
 import { Lead, JobRun, JobType, LeadStage, JobStatus } from '../types';
 
-const API_BASE = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.NEXT_PUBLIC_API_BASE_URL || '';
+/**
+ * Resolves the API base URL for the backend service.
+ * In a production multi-service environment (like Railway), this must point 
+ * to the publicly accessible URL of the FastAPI service.
+ */
+const API_BASE = (import.meta as any).env?.NEXT_PUBLIC_API_BASE_URL || '';
 
 export interface Metrics {
   totalInventoryIps: number;
@@ -25,25 +30,31 @@ class ApiService {
 
   private async fetchJson(path: string, options?: RequestInit) {
     if (this.isDemoMode) return this.getMockResponse(path);
+    
     try {
-      const response = await fetch(`${API_BASE}${path}`, {
+      const url = `${API_BASE}${path}`;
+      const response = await fetch(url, {
         ...options,
         headers: { 
           'Content-Type': 'application/json',
           ...options?.headers 
         },
       });
-      if (!response.ok) throw new Error(`API Connection Failed: ${response.statusText}`);
+
+      if (!response.ok) {
+        throw new Error(`API Connection Failed: ${response.status}`);
+      }
+      
       return response.json();
     } catch (error) {
-      console.warn("API Node Unreachable - Activating Demo Simulation:", error);
+      console.warn(`[API] Remote host ${API_BASE} unreachable. Engaging local simulation.`, error);
       this.isDemoMode = true;
       return this.getMockResponse(path);
     }
   }
 
   private getMockResponse(path: string): any {
-    if (path.includes('/health')) return { status: 'demo', database: 'connected', redis: 'connected', worker: 'active' };
+    if (path.includes('/health')) return { status: 'simulated', database: 'connected', redis: 'connected', worker: 'active' };
     if (path.includes('/metrics')) return {
       totalInventoryIps: 16777216,
       activeLeads: 48,
@@ -56,7 +67,7 @@ class ApiService {
     };
     if (path.includes('/leads/')) {
         if (path.split('/').length > 3) {
-            return this.generateMockLead('DEMO-ID', LeadStage.FOUND);
+            return this.generateMockLead('DEMO-X', LeadStage.FOUND);
         }
         return [
             this.generateMockLead('1', LeadStage.FOUND, 'Legacy Research Corp', '12.0.0.0/8', 92, 'High'),
@@ -64,13 +75,12 @@ class ApiService {
             this.generateMockLead('3', LeadStage.CONTACTED, 'Oceanic Networking', '103.45.0.0/22', 78, 'Medium'),
             this.generateMockLead('4', LeadStage.NDA, 'Vintage Cloud Solutions', '8.8.4.0/24', 98, 'High'),
             this.generateMockLead('5', LeadStage.NEGOTIATING, 'AeroSpace Telecom', '192.0.2.0/24', 88, 'Medium'),
-            this.generateMockLead('6', LeadStage.FOUND, 'EduNet Foundation', '140.211.0.0/16', 65, 'Low'),
         ];
     }
     return [];
   }
 
-  private generateMockLead(id: string, stage: LeadStage, org = 'Mock Org', cidr = '1.0.0.0/8', score = 50, priority: any = 'Medium'): Lead {
+  private generateMockLead(id: string, stage: LeadStage, org = 'Mock Asset', cidr = '1.0.0.0/8', score = 50, priority: any = 'Medium'): Lead {
       return {
           id,
           orgName: org,
@@ -80,7 +90,7 @@ class ApiService {
           stage,
           priority,
           owner: 'System',
-          nextActionDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+          nextActionDate: new Date(Date.now() + 172800000).toISOString(),
           lastUpdated: new Date().toISOString(),
           scoreBreakdown: { size: 10, legacy: 10, utilization: 8, orgChange: 9, reputation: 10, transfer: 10 }
       };
@@ -102,7 +112,7 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ cidr: lead.cidr, orgName: lead.orgName })
     });
-    return res.text || res.error || "Analysis engine offline.";
+    return res.text || res.error || "Analysis offline.";
   }
 }
 

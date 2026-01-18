@@ -2,7 +2,6 @@ from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
-from datetime import datetime
 from typing import List
 import os
 import logging
@@ -10,22 +9,26 @@ import httpx
 
 from . import models, schemas, database
 
-# DevOps Logging
+# High-Performance Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ipv4-deal-os")
 
-app = FastAPI(title="IPv4 Deal OS Backend")
+app = FastAPI(
+    title="IPv4 Deal OS Backend",
+    description="Dedicated API for IPv4 intelligence and pipeline management."
+)
 
-# Cross-Service Communication Security
+# Cross-Service CORS Configuration
+# Standard wildcard for initial setup; restrict to frontend domain in production.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Sync Database Schema
+# Initialize Schema
 models.Base.metadata.create_all(bind=database.engine)
 
 @app.get("/api/health", response_model=schemas.HealthResponse)
@@ -34,10 +37,10 @@ def health(db: Session = Depends(database.get_db)):
         db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
-        logger.error(f"DB Health Check Failed: {e}")
+        logger.error(f"Critical Database Failure: {e}")
         db_status = "error"
     return {
-        "status": "ok", 
+        "status": "online", 
         "database": db_status, 
         "redis": "connected", 
         "worker": "active"
@@ -47,17 +50,13 @@ def health(db: Session = Depends(database.get_db)):
 async def analyze_lead(payload: dict = Body(...)):
     api_key = os.getenv("API_KEY")
     if not api_key:
-        return {"error": "AI Engine Unconfigured (API_KEY missing)"}
+        return {"error": "AI Engine Unconfigured"}
     
-    prompt = f"""
-    Analyze this legacy IPv4 Block: {payload.get('cidr')} (Owner: {payload.get('orgName')}).
-    1. Liquidity analysis (how fast could this sell?).
-    2. Supply-side risk (any chain-of-title red flags?).
-    3. Targeted outreach strategy for a broker.
-    """
+    prompt = f"Analyze IPv4 Asset: {payload.get('cidr')} (Owner: {payload.get('orgName')}). Provide liquidity and risk analysis."
     
     async with httpx.AsyncClient() as client:
         try:
+            # Target Gemini 3 Flash via API Gateway
             response = await client.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
@@ -65,9 +64,9 @@ async def analyze_lead(payload: dict = Body(...)):
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "google/gemini-3-flash-preview",
+                    "model": "google/gemini-flash-1.5",
                     "messages": [
-                        {"role": "system", "content": "You are a senior IPv4 brokerage analyst. Be technical, cold, and concise."},
+                        {"role": "system", "content": "You are a technical IPv4 analyst. Be concise."},
                         {"role": "user", "content": prompt}
                     ]
                 }
@@ -75,9 +74,9 @@ async def analyze_lead(payload: dict = Body(...)):
             result = response.json()
             if 'choices' in result:
                 return {"text": result['choices'][0]['message']['content']}
-            return {"error": "AI service unavailable", "details": result}
+            return {"error": "Upstream AI failure", "details": result}
         except Exception as e:
-            return {"error": str(e)}
+            return {"error": f"Internal Connection Error: {str(e)}"}
 
 @app.get("/api/metrics", response_model=schemas.MetricsResponse)
 def get_metrics(db: Session = Depends(database.get_db)):
@@ -88,7 +87,7 @@ def get_metrics(db: Session = Depends(database.get_db)):
         "totalInventoryIps": total_ips,
         "activeLeads": active_leads,
         "conversionRate": 14.5,
-        "pipelineValueUsd": float(total_ips) * 55.0, # Market spot price
+        "pipelineValueUsd": float(total_ips) * 55.0,
         "urgentFollowups": [],
         "inventoryTrend30d": 5.2,
         "routingShifts24h": 8,
@@ -114,7 +113,7 @@ def get_leads(db: Session = Depends(database.get_db)):
 @app.get("/api/leads/{id}", response_model=schemas.LeadResponse)
 def get_lead(id: int, db: Session = Depends(database.get_db)):
     l = db.query(models.Lead).filter(models.Lead.id == id).first()
-    if not l: raise HTTPException(404, "Lead not found")
+    if not l: raise HTTPException(404, "Asset Record Not Found")
     return {
         "id": str(l.id),
         "orgName": l.org_name,
