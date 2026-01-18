@@ -1,0 +1,12 @@
+{
+  "name": "ipv4-deal-sourcing-os",
+  "version": "1.0.0",
+  "description": "IPv4 Deal Sourcing OS",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "echo 'Static frontend ready'"
+  }
+}
