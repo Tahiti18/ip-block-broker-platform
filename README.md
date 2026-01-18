@@ -1,32 +1,27 @@
 # IPv4 Deal Sourcing OS
 
-A high-performance, iPad-first platform for IPv4 brokers to source, score, and manage legacy IP block deals using public telemetry and AI insights.
+A high-performance, iPad-first platform for IPv4 brokers. This system uses **NATIVE NIXPACKS** deployment. **Docker has been completely purged.**
 
-## 🚀 Native Production Deployment (Manual UI Setup)
+## 🚀 How to fix "No start command was found" (Railway UI)
 
-This system is architected as a native multi-service application. **This project contains NO Dockerfiles, NO container configurations, and NO automated build scripts.** All deployment is handled manually through the Railway UI to ensure zero-overhead performance.
+The error in your logs happens because Railway needs to know exactly how to start the Python/React services without a container. Use the following settings in the Railway Dashboard:
 
-### 1. Service A: Backend API (FastAPI)
-- **Repository**: Connect this GitHub repository.
+### 1. Backend Service (FastAPI)
 - **Root Directory**: `backend/`
 - **Build Command**: `pip install -r requirements.txt`
 - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- **Required Environment Variables**:
-  - `DATABASE_URL`: Your PostgreSQL connection string.
-  - `API_KEY`: Your Google Gemini API Key.
-  - `REDIS_URL`: Your Redis connection string (if using background workers).
+- **Variables**: `DATABASE_URL`, `API_KEY`, `REDIS_URL`.
 
-### 2. Service B: User Interface (React/Vite)
-- **Repository**: Connect this GitHub repository.
-- **Root Directory**: `/` (The project root)
+### 2. Frontend Service (React)
+- **Root Directory**: `/`
 - **Build Command**: `npm install && npm run build`
 - **Start Command**: `npm run start`
-- **Required Environment Variables**:
-  - `NEXT_PUBLIC_API_BASE_URL`: The public "Networking" URL assigned to your Backend Service (Service A).
-  - `API_KEY`: Your Google Gemini API Key.
+- **Variables**: `NEXT_PUBLIC_API_BASE_URL` (Point this to your Backend's domain).
 
-## 🛠 Features
-- **Tactical Dashboard**: Real-time telemetry on BGP and RDAP shifts.
-- **AI Intelligence**: Gemini-powered market briefings with Google Search grounding.
-- **iPad-First Design**: Optimized for touch with large tap targets and a sidebar-focused layout.
-- **Native Reliability**: Strictly manual configuration for maximum control and stability.
+## 🛠 Native Architecture Components
+- **Procfile Support**: Included in both directories to automate start commands if UI is not configured.
+- **Zero-Docker Engine**: Running directly on the host OS for maximum throughput.
+- **Intelligence**: Gemini 3.0 Pro with real-time Google Search grounding.
+
+## ⚠️ Manual Cleanup
+If `Dockerfile` or `docker-compose.yml` still appear in your local file explorer, please delete them manually. This repository has overwritten them with empty placeholders to disable them in production.
