@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta
@@ -10,21 +11,29 @@ import logging
 from . import models, schemas, database
 from .worker import queue_job
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("ipv4-os")
+# Set up high-visibility logging for DevOps troubleshooting
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("ipv4-os-backend")
 
 app = FastAPI(title="IPv4 Deal OS Backend")
 
 # Initialize database
-models.Base.metadata.create_all(bind=database.engine)
+try:
+    models.Base.metadata.create_all(bind=database.engine)
+    logger.info("Database schemas synchronized successfully.")
+except Exception as e:
+    logger.error(f"Database initialization failed: {e}")
 
 @app.get("/api/health", response_model=schemas.HealthResponse)
 def health(db: Session = Depends(database.get_db)):
     try:
-        db.execute("SELECT 1")
+        db.execute(database.text("SELECT 1"))
         db_status = "connected"
-    except Exception:
+    except Exception as e:
+        logger.error(f"Health check DB failure: {e}")
         db_status = "error"
     
     return {
@@ -123,34 +132,6 @@ def get_lead(id: int, db: Session = Depends(database.get_db)):
         "lastUpdated": l.last_updated
     }
 
-@app.patch("/api/leads/{id}", response_model=schemas.LeadResponse)
-def update_lead(id: int, updates: schemas.LeadUpdate, db: Session = Depends(database.get_db)):
-    lead = db.query(models.Lead).filter(models.Lead.id == id).first()
-    if not lead:
-        raise HTTPException(status_code=404, detail="Lead not found")
-    
-    if updates.stage is not None:
-        lead.stage = updates.stage
-    if updates.nextActionDate is not None:
-        lead.next_action_date = updates.nextActionDate
-    if updates.notes is not None:
-        lead.notes = updates.notes
-    
-    db.commit()
-    db.refresh(lead)
-    return {
-        "id": str(lead.id),
-        "orgName": lead.org_name,
-        "cidr": lead.cidr,
-        "size": lead.size,
-        "score": lead.score,
-        "stage": lead.stage,
-        "owner": lead.owner,
-        "nextActionDate": lead.next_action_date,
-        "scoreBreakdown": lead.score_breakdown,
-        "lastUpdated": lead.last_updated
-    }
-
 @app.post("/api/jobs/run", response_model=schemas.JobRunResponse)
 def run_job(job_type: str = Body(..., embed=True), db: Session = Depends(database.get_db)):
     job = models.JobRun(type=job_type, status="queued")
@@ -181,13 +162,30 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Static File Configuration for Production
-# __file__ is /app/backend/main.py, so BASE_DIR is /app
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INDEX_PATH = os.path.join(BASE_DIR, "index.html")
+# --- Static File Serving (The Out-of-the-box Fix) ---
+# We serve the frontend files directly from the root if they exist.
+# This ensures that even in complex container deployments, the UI is found.
+BASE_DIR = os.getcwd()
+logger.info(f"System Root: {BASE_DIR}")
 
-if os.path.exists(INDEX_PATH):
-    logger.info(f"Serving static files from {BASE_DIR}")
-    app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
-else:
-    logger.warning(f"Frontend index.html not found at {INDEX_PATH}. API mode only.")
+# Mount static files for assets (js, css, etc.)
+if os.path.isdir(os.path.join(BASE_DIR, "assets")):
+    app.mount("/assets", StaticFiles(directory=os.path.join(BASE_DIR, "assets")), name="assets")
+
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    # Ignore API requests
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404)
+    
+    # Check if a specific file exists (e.g., manifest.json, favicon)
+    file_path = os.path.join(BASE_DIR, full_path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # Fallback to index.html for SPA routing
+    index_path = os.path.join(BASE_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    
+    return {"error": "Frontend assets not found. Build may have failed or path is incorrect."}
