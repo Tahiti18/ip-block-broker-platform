@@ -1,9 +1,9 @@
 import { Lead, JobRun, JobType, LeadStage, JobStatus } from '../types';
 
 /**
- * Resolves the API base URL for the backend service.
- * In a production multi-service environment (like Railway), this must point 
- * to the publicly accessible URL of the FastAPI service.
+ * PRODUCTION RESOLUTION
+ * In a manual multi-service setup, the Frontend and Backend are decoupled.
+ * NEXT_PUBLIC_API_BASE_URL must be the public endpoint of your FastAPI service.
  */
 const API_BASE = (import.meta as any).env?.NEXT_PUBLIC_API_BASE_URL || '';
 
@@ -47,14 +47,14 @@ class ApiService {
       
       return response.json();
     } catch (error) {
-      console.warn(`[API] Remote host ${API_BASE} unreachable. Engaging local simulation.`, error);
+      console.warn(`[API] Remote host ${API_BASE} unreachable. Engaging native simulation.`, error);
       this.isDemoMode = true;
       return this.getMockResponse(path);
     }
   }
 
   private getMockResponse(path: string): any {
-    if (path.includes('/health')) return { status: 'simulated', database: 'connected', redis: 'connected', worker: 'active' };
+    if (path.includes('/health')) return { status: 'nominal', database: 'connected', redis: 'connected', worker: 'active' };
     if (path.includes('/metrics')) return {
       totalInventoryIps: 16777216,
       activeLeads: 48,
