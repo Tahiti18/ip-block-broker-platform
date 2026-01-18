@@ -5,9 +5,9 @@ import LeadTable from '../components/LeadTable';
 import { TrendingUp, Target, Activity, AlertCircle, Database, PackageSearch, RefreshCw, Cpu, Globe } from 'lucide-react';
 
 const StatCard = ({ title, value, change, icon: Icon, color }: any) => (
-  <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-200/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+  <div className="bg-white/90 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-slate-200/60 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
     <div className="flex justify-between items-start mb-4">
-      <div className={`p-3 rounded-2xl shadow-inner ${color}`}>
+      <div className={`p-3 rounded-2xl shadow-inner ${color} group-hover:scale-110 transition-transform duration-300`}>
         <Icon className="w-6 h-6 text-white" />
       </div>
       <div className="text-[10px] font-black text-green-600 flex items-center bg-green-50 px-2.5 py-1 rounded-full border border-green-100">
@@ -84,28 +84,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLeadSelect, onNavigate }) => {
 
   return (
     <div className="p-6 lg:p-10 space-y-10 max-w-7xl mx-auto pb-24">
-      {/* Header with Glassmorphism Status */}
+      {/* Header with Visual Status */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-6 sm:space-y-0">
         <div className="space-y-1">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-ping"></div>
-            <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Sourcing Protocol 1.4 Active</span>
+            <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Sourcing Protocol 1.4.1 Active</span>
           </div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">Brokerage Command Center</h1>
         </div>
         
         <div className="flex items-center space-x-3 bg-white/50 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="flex -space-x-2">
-            {[1,2,3].map(i => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500">
-                {String.fromCharCode(64 + i)}
-              </div>
-            ))}
-          </div>
-          <div className="h-4 w-px bg-slate-200"></div>
           <button 
             onClick={loadData}
-            className="flex items-center space-x-2 px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-bold text-xs shadow-lg active:scale-95 transition-all"
+            className="flex items-center space-x-2 px-6 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 font-bold text-xs shadow-lg active:scale-95 transition-all"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Syncing...' : 'Live Refresh'}</span>
@@ -152,18 +144,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLeadSelect, onNavigate }) => {
               <Activity className="w-5 h-5 mr-2 text-blue-600" />
               Sourcing Pipeline
             </h3>
-            <button className="text-xs font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">View All Leads</button>
+            <button className="text-xs font-bold text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors">View Detailed Ledger</button>
           </div>
           <LeadTable leads={leads} onSelectLead={onLeadSelect} />
         </div>
         
         <div className="space-y-6">
-          {/* Action Center */}
+          {/* Urgent Action Center */}
           <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200/60 overflow-hidden relative group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/5 blur-3xl group-hover:bg-amber-400/10 transition-colors"></div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/5 blur-3xl group-hover:bg-amber-400/10 transition-colors duration-500"></div>
             <h3 className="font-black text-slate-900 mb-6 flex items-center text-lg">
               <AlertCircle className="w-5 h-5 mr-2 text-amber-500" />
-              Urgent Priority
+              High Priority Tasks
             </h3>
             <div className="space-y-4">
               {metrics.urgentFollowups && metrics.urgentFollowups.length > 0 ? metrics.urgentFollowups.map(lead => (
@@ -175,46 +167,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onLeadSelect, onNavigate }) => {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-black text-slate-900 truncate">{lead.orgName}</p>
                     <div className="flex items-center mt-1">
-                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mr-2">Due Today</span>
-                      <p className="text-[10px] text-slate-400 font-mono">{lead.cidr}</p>
+                      <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mr-2 uppercase">Action Required</span>
+                      <p className="text-[10px] text-slate-400 font-mono tracking-tight">{lead.cidr}</p>
                     </div>
                   </div>
                   <div className="shrink-0 ml-3">
                     <div className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-600 transition-colors">
-                      <RefreshCw className="w-3.5 h-3.5" />
+                      <TrendingUp className="w-3.5 h-3.5" />
                     </div>
                   </div>
                 </div>
               )) : (
                 <div className="py-12 text-center">
-                  <p className="text-sm text-slate-400 font-medium italic">Pipeline clear</p>
+                  <p className="text-sm text-slate-400 font-medium italic">Sourcing queue clear.</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* System Telemetry */}
-          <div className="bg-slate-900 p-8 rounded-[2rem] shadow-2xl text-white relative overflow-hidden">
-            <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-600/10 blur-[80px]"></div>
+          {/* Engine Telemetry Visualization */}
+          <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-2xl text-white relative overflow-hidden">
+            <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-600/15 blur-[80px]"></div>
             <div className="relative z-10">
               <div className="flex items-center space-x-2 mb-2">
                 <Cpu className="w-4 h-4 text-blue-400" />
-                <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">Telemetry Status</h4>
+                <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">System Telemetry</h4>
               </div>
               <div className="flex items-center space-x-3 mt-4">
                 <div className="relative">
                   <div className="w-3 h-3 bg-green-500 rounded-full animate-ping absolute opacity-75"></div>
                   <div className="w-3 h-3 bg-green-500 rounded-full relative"></div>
                 </div>
-                <span className="text-lg font-black tracking-tight">Engine Ingesting</span>
+                <span className="text-lg font-black tracking-tight">Engine Operational</span>
               </div>
               <p className="text-xs text-slate-400 mt-4 leading-relaxed font-medium">
-                Parsing global BGP route-objects and RDAP registry deltas. High-frequency sourcing active.
+                Scanning global BGP table shifts and RDAP delta-logs. Real-time sourcing active.
               </p>
               
               <div className="mt-8 pt-6 border-t border-white/10 grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-[10px] text-white/30 font-black uppercase tracking-widest mb-1">Deltas Found</p>
+                  <p className="text-[10px] text-white/30 font-black uppercase tracking-widest mb-1">Deltas</p>
                   <p className="text-lg font-black text-white">{metrics.newCandidates24h}</p>
                 </div>
                 <div>

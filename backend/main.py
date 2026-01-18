@@ -5,9 +5,14 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import List
 import os
+import logging
 
 from . import models, schemas, database
 from .worker import queue_job
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("ipv4-os")
 
 app = FastAPI(title="IPv4 Deal OS Backend")
 
@@ -176,10 +181,13 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Robust static file resolution for Docker/Railway environments
-# Current file: /app/backend/main.py -> Base: /app
+# Static File Configuration for Production
+# __file__ is /app/backend/main.py, so BASE_DIR is /app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+INDEX_PATH = os.path.join(BASE_DIR, "index.html")
 
-# Only mount if index.html exists in the base directory
-if os.path.exists(os.path.join(BASE_DIR, "index.html")):
+if os.path.exists(INDEX_PATH):
+    logger.info(f"Serving static files from {BASE_DIR}")
     app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
+else:
+    logger.warning(f"Frontend index.html not found at {INDEX_PATH}. API mode only.")
