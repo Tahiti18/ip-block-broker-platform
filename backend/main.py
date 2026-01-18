@@ -176,7 +176,9 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Absolute path resolution for static files to avoid container directory issues
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if os.path.exists(os.path.join(ROOT_DIR, "index.html")):
-    app.mount("/", StaticFiles(directory=ROOT_DIR, html=True), name="static")
+# Improved static file resolution
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATIC_DIR = os.path.join(BASE_DIR)
+
+if os.path.exists(os.path.join(STATIC_DIR, "index.html")):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
