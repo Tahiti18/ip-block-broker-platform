@@ -176,7 +176,7 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Serves static files from the project root directory
-# Calculation ensures it works in both local and container environments
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-app.mount("/", StaticFiles(directory=ROOT_DIR, html=True), name="static")
+# Absolute path resolution for static files to avoid container directory issues
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if os.path.exists(os.path.join(ROOT_DIR, "index.html")):
+    app.mount("/", StaticFiles(directory=ROOT_DIR, html=True), name="static")
