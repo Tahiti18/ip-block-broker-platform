@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Lead } from '../types';
 import { api } from '../services/api';
-import { ArrowLeft, Sparkles, Database, ShieldCheck, Zap } from 'lucide-react';
+import { gemini } from '../services/geminiService';
+import { ArrowLeft, Sparkles, Zap } from 'lucide-react';
 
 const LeadDetail: React.FC<{ leadId: string, onBack: () => void }> = ({ leadId, onBack }) => {
   const [lead, setLead] = useState<Lead | null>(null);
@@ -9,62 +10,129 @@ const LeadDetail: React.FC<{ leadId: string, onBack: () => void }> = ({ leadId, 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getLead(leadId).then(l => {
-      setLead(l);
-      setLoading(false);
-      api.analyzeLead(l).then(setBrief);
-    });
+    let isMounted = true;
+    
+    const fetchData = async () => {
+      try {
+        const l = await api.getLead(leadId);
+        if (!isMounted) return;
+        setLead(l);
+        setLoading(false);
+        
+        // Leverage the high-performance Gemini 3 Pro model for complex brokerage analysis
+        const briefing = await gemini.generateLeadBrief(l);
+        if (isMounted) setBrief(briefing);
+      } catch (err) {
+        console.error("Asset Intel Error:", err);
+        if (isMounted) {
+          setLoading(false);
+          setBrief("Analysis temporarily unavailable. Please verify API configuration.");
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => { isMounted = false; };
   }, [leadId]);
 
-  if (loading || !lead) return <div className="p-20 text-center animate-pulse">Loading Asset Metadata...</div>;
+  if (loading || !lead) return (
+    <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex flex-col items-center space-y-6">
+        <div className="relative">
+          <Zap className="w-12 h-12 text-blue-500 animate-pulse" />
+          <div className="absolute inset-0 bg-blue-500/20 blur-2xl animate-pulse"></div>
+        </div>
+        <p className="text-slate-500 font-black uppercase tracking-[0.4em] text-[10px]">Retrieving Asset Intelligence</p>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-5xl mx-auto p-6 lg:p-12 space-y-12">
-      <button onClick={onBack} className="flex items-center text-slate-400 hover:text-slate-900 transition-colors font-bold text-sm">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        RETURN TO SOURCING
+    <div className="max-w-7xl mx-auto p-8 lg:p-14 space-y-14">
+      <button 
+        onClick={onBack} 
+        className="group flex items-center text-slate-400 hover:text-slate-900 transition-all font-black text-[10px] tracking-[0.3em] uppercase"
+      >
+        <div className="p-2 bg-white rounded-lg border border-slate-100 mr-4 group-hover:border-slate-300 transition-all">
+          <ArrowLeft className="w-4 h-4" />
+        </div>
+        Return to Global Sourcing
       </button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-        <div className="lg:col-span-2 space-y-10">
-          <div className="space-y-4">
-            <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full uppercase tracking-widest">Legacy IPv4 Asset</span>
-            <h1 className="text-5xl font-black text-slate-900 tracking-tighter leading-tight">{lead.orgName}</h1>
-            <p className="text-2xl font-mono text-blue-500 font-bold tracking-tighter">{lead.cidr}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-14">
+        <div className="lg:col-span-2 space-y-12">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <span className="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest shadow-lg shadow-blue-600/20">
+                Legacy IPv4 Asset
+              </span>
+              <div className="flex items-center space-x-2 text-emerald-600">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-bold uppercase tracking-widest">RIR Ownership Verified</span>
+              </div>
+            </div>
+            <h1 className="text-7xl font-black text-slate-900 tracking-tighter leading-[1.1]">{lead.orgName}</h1>
+            <div className="flex items-center space-x-4">
+              <p className="text-3xl font-mono text-blue-600 font-bold tracking-tighter">{lead.cidr}</p>
+              <span className="text-slate-300 font-bold">/</span>
+              <p className="text-xl font-bold text-slate-400 uppercase tracking-widest">{lead.size.toLocaleString()} IPs</p>
+            </div>
           </div>
 
-          <div className="bg-slate-900 rounded-[3rem] p-10 text-white relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 blur-[80px]"></div>
-            <div className="flex items-center space-x-3 mb-8">
-              <Sparkles className="w-5 h-5 text-blue-400" />
-              <h3 className="font-black text-sm uppercase tracking-[0.2em]">Brokerage AI Briefing</h3>
-            </div>
-            <div className="prose prose-invert max-w-none text-slate-300 leading-relaxed font-medium">
-              {brief || "AI Engine is synthesizing block history and risk deltas..."}
+          <div className="bg-slate-900 rounded-[4rem] p-14 text-white relative overflow-hidden shadow-2xl border border-white/5">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 blur-[120px]"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-12">
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-blue-500/20 rounded-2xl">
+                    <Sparkles className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <h3 className="font-black text-sm uppercase tracking-[0.25em]">Sourcing AI Intel Briefing</h3>
+                </div>
+                <div className="text-[10px] font-bold text-blue-400/60 uppercase tracking-widest font-mono">
+                  Engine: Gemini 3 Pro
+                </div>
+              </div>
+              <div className="prose prose-invert max-w-none text-slate-300 leading-loose font-medium text-lg whitespace-pre-wrap">
+                {brief || "Synthesizing market liquidity data and historical block telemetry..."}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-8">
-          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Deal Confidence</p>
-            <div className="text-6xl font-black text-slate-900">{lead.score}</div>
-            <div className="mt-6 flex justify-center">
-               <div className="h-1.5 w-full max-w-[120px] bg-slate-100 rounded-full overflow-hidden">
-                 <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${lead.score}%` }}></div>
+        <div className="space-y-10">
+          <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-2xl shadow-slate-200/40 text-center relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 relative z-10">Deal Confidence Score</p>
+            <div className="text-8xl font-black text-slate-900 tracking-tighter mb-8 relative z-10">{lead.score}</div>
+            <div className="flex justify-center mb-6 relative z-10">
+               <div className="h-3 w-full max-w-[200px] bg-slate-100 rounded-full overflow-hidden p-0.5">
+                 <div className="h-full bg-blue-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-1000 ease-out" style={{ width: `${lead.score}%` }}></div>
                </div>
+            </div>
+            <div className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest relative z-10 border border-emerald-100">
+              <Zap className="w-3 h-3 fill-emerald-600" />
+              <span>Priority Acquisition</span>
             </div>
           </div>
 
-          <div className="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-600/20">
-             <Zap className="w-6 h-6 mb-6 text-emerald-200 fill-emerald-200" />
-             <h4 className="text-xl font-black mb-2">Outreach Primed</h4>
-             <p className="text-xs text-emerald-100 opacity-80 leading-relaxed mb-8">
-               Blockchain provenance verified. This asset has no recorded transfers in 24 years.
-             </p>
-             <button className="w-full py-4 bg-white text-emerald-600 rounded-2xl font-black text-sm active:scale-95 transition-transform shadow-lg">
-               Initialize Transfer Prep
-             </button>
+          <div className="bg-gradient-to-br from-blue-600 to-indigo-700 p-12 rounded-[4rem] text-white shadow-2xl shadow-blue-900/30 relative overflow-hidden group">
+             <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-white/10 blur-[60px] group-hover:scale-150 transition-transform duration-1000"></div>
+             <div className="relative z-10 space-y-8">
+               <div className="p-4 bg-white/10 rounded-[1.5rem] w-fit">
+                 <Zap className="w-8 h-8 text-blue-100 fill-white" />
+               </div>
+               <div>
+                 <h4 className="text-3xl font-black mb-4 tracking-tight">Prime Supply</h4>
+                 <p className="text-sm text-blue-100/80 leading-relaxed font-medium">
+                   This block has no recorded transfers or litigation history. Direct approach to the Infrastructure Director is recommended via technical provenance evidence.
+                 </p>
+               </div>
+               <button className="w-full py-6 bg-white text-blue-600 rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] active:scale-95 transition-all shadow-xl hover:shadow-white/20">
+                 Draft Outreach Plan
+               </button>
+             </div>
           </div>
         </div>
       </div>
