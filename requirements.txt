@@ -6,3 +6,6 @@ redis
 rq
 pydantic
 python-multipart
+httpx
+python-dotenv
+static-ffmpeg

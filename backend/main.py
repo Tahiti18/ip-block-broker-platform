@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from datetime import datetime
@@ -19,7 +20,7 @@ app = FastAPI(title="IPv4 Deal OS Backend")
 # Cross-Service Communication Security
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, replace with your specific Railway frontend URL
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,3 +128,8 @@ def get_lead(id: int, db: Session = Depends(database.get_db)):
         "scoreBreakdown": l.score_breakdown,
         "lastUpdated": l.last_updated
     }
+
+# Serve static files from the 'dist' directory created during the build phase
+dist_path = os.path.join(os.getcwd(), "dist")
+if os.path.exists(dist_path):
+    app.mount("/", StaticFiles(directory=dist_path, html=True), name="static")
