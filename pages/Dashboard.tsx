@@ -95,7 +95,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLeadSelect, onNavigate }) => {
               <div className="w-3 h-3 bg-blue-500 rounded-full animate-ping opacity-40"></div>
               <div className="w-2.5 h-2.5 bg-blue-600 rounded-full absolute"></div>
             </div>
-            <span className="text-xs font-black text-blue-600 uppercase tracking-[0.3em]">Operational Phase 1.4.2</span>
+            <span className="text-xs font-black text-blue-600 uppercase tracking-[0.3em]">Operational Phase 1.5.0</span>
           </div>
           <h1 className="text-5xl font-black text-slate-900 tracking-tight leading-none">Command Center</h1>
         </div>
