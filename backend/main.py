@@ -176,9 +176,10 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Improved static file resolution
+# Resolve root directory relative to this file's location
+# backend/main.py -> backend -> project_root
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_DIR = os.path.join(BASE_DIR)
 
-if os.path.exists(os.path.join(STATIC_DIR, "index.html")):
-    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
+# Serve static files from the project root (where index.html resides)
+if os.path.exists(os.path.join(BASE_DIR, "index.html")):
+    app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
