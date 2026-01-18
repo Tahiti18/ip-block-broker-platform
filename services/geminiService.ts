@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Lead } from "../types";
 
@@ -7,58 +6,63 @@ export class GeminiService {
    * Initializes the Google GenAI client using the API key from environment variables.
    */
   private getAi() {
-    // API key must be accessed from process.env.API_KEY and passed as a named parameter.
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   /**
-   * Generates a technical briefing for an IPv4 asset using the Gemini 3 Pro model.
+   * Generates a high-fidelity brokerage briefing with real-time market grounding.
    */
-  async generateLeadBrief(lead: Lead): Promise<string> {
+  async generateLeadBrief(lead: Lead): Promise<{ text: string; sources: any[] }> {
     const ai = this.getAi();
-    const prompt = `Perform a high-level brokerage analysis for this IPv4 asset:
+    const prompt = `Perform a senior-level brokerage analysis for this IPv4 asset:
     Org: ${lead.orgName}
     CIDR: ${lead.cidr}
     Block Size: ${lead.size.toLocaleString()} IPs
-    Confidence Score: ${lead.score}/100
-    ---
-    Provide:
-    1. LIQUIDITY ANALYSIS: Based on block size and legacy status.
-    2. RISK PROFILE: Chain-of-title or utilization flags.
-    3. OUTREACH STRATEGY: Should we approach Finance (CFO) or Operations (CTO)?`;
+    
+    Current Task:
+    1. LIQUIDITY & PRICING: Search for the current market spot price for a /${lead.cidr.split('/')[1]} block.
+    2. RISK PROFILE: Check for recent RIR policy changes or litigation involving ${lead.orgName}.
+    3. OUTREACH PERSONA: Identify the likely decision-maker (CFO, CTO, or IT Director).
+    
+    Use Google Search to find real-time pricing data from verified IPv4 brokers (e.g., Hilco, IPv4.Global).`;
 
     try {
-      // Use 'gemini-3-pro-preview' for complex technical reasoning tasks.
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: prompt,
         config: {
-          systemInstruction: "You are a senior IPv4 brokerage analyst. Your task is to analyze legacy IP assets, identify supply-side risks, and suggest outreach personas. Be concise, technical, and professional."
+          systemInstruction: "You are a senior IPv4 brokerage analyst. Your task is to provide high-stakes intelligence on legacy IP assets. Be technical, objective, and reference real-time market data where available.",
+          tools: [{ googleSearch: {} }]
         }
       });
-      // The text output is accessed via the .text property (not a method).
-      return response.text || "AI Briefing unavailable.";
+
+      const text = response.text || "AI Briefing unavailable.";
+      const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      
+      return { text, sources };
     } catch (e) {
       console.error("Gemini Analysis Error:", e);
-      return "AI analysis failed due to a connection error.";
+      return { text: "AI analysis failed due to a connection error.", sources: [] };
     }
   }
 
   /**
-   * Researches entity details using the Gemini 3 Flash model.
+   * Researches entity details for M&A signals.
    */
   async resolveEntity(orgName: string): Promise<string> {
     const ai = this.getAi();
-    const prompt = `Research parent company and M&A status for the organization: "${orgName}". Return a one-paragraph corporate summary.`;
+    const prompt = `Search for recent M&A activity, bankruptcy filings, or corporate restructuring for "${orgName}". 
+    Evaluate if this organization is a "motivated seller" of its legacy IP assets.`;
     
     try {
-      // Use 'gemini-3-flash-preview' for basic text tasks.
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: prompt
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }]
+        }
       });
-      // Access the .text property directly.
-      return response.text || "No corporate summary available.";
+      return response.text || "No corporate intelligence available.";
     } catch (e) {
       return "Entity resolution failed.";
     }

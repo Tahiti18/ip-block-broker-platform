@@ -54,12 +54,36 @@ class ApiService {
       routingShifts24h: 12,
       newCandidates24h: 5
     };
-    if (path.includes('/leads/')) return {
-        id: 'DEMO-88', orgName: 'Legacy Research Institute', cidr: '12.0.0.0/8', size: 16777216, score: 92, 
-        stage: LeadStage.FOUND, owner: 'System', nextActionDate: '2025-01-25', 
-        lastUpdated: new Date().toISOString(), scoreBreakdown: { size: 10, legacy: 10, utilization: 8, orgChange: 9, reputation: 10, transfer: 10 }
-    };
+    if (path.includes('/leads/')) {
+        if (path.split('/').length > 3) {
+            return this.generateMockLead('DEMO-ID', LeadStage.FOUND);
+        }
+        return [
+            this.generateMockLead('1', LeadStage.FOUND, 'Legacy Research Corp', '12.0.0.0/8', 92, 'High'),
+            this.generateMockLead('2', LeadStage.VERIFIED, 'Tech Global Systems', '44.128.0.0/16', 85, 'High'),
+            this.generateMockLead('3', LeadStage.CONTACTED, 'Oceanic Networking', '103.45.0.0/22', 78, 'Medium'),
+            this.generateMockLead('4', LeadStage.NDA, 'Vintage Cloud Solutions', '8.8.4.0/24', 98, 'High'),
+            this.generateMockLead('5', LeadStage.NEGOTIATING, 'AeroSpace Telecom', '192.0.2.0/24', 88, 'Medium'),
+            this.generateMockLead('6', LeadStage.FOUND, 'EduNet Foundation', '140.211.0.0/16', 65, 'Low'),
+        ];
+    }
     return [];
+  }
+
+  private generateMockLead(id: string, stage: LeadStage, org = 'Mock Org', cidr = '1.0.0.0/8', score = 50, priority: any = 'Medium'): Lead {
+      return {
+          id,
+          orgName: org,
+          cidr: cidr,
+          size: 65536,
+          score,
+          stage,
+          priority,
+          owner: 'System',
+          nextActionDate: new Date(Date.now() + 86400000 * 2).toISOString(),
+          lastUpdated: new Date().toISOString(),
+          scoreBreakdown: { size: 10, legacy: 10, utilization: 8, orgChange: 9, reputation: 10, transfer: 10 }
+      };
   }
 
   async getHealth(): Promise<SystemHealth> { return this.fetchJson('/api/health'); }

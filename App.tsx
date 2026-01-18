@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import LeadDetail from './pages/LeadDetail';
 import Jobs from './pages/Jobs';
+import Pipeline from './pages/Pipeline';
 import { Lead } from './types';
 
 const App: React.FC = () => {
@@ -27,28 +27,41 @@ const App: React.FC = () => {
           onLeadSelect={(lead) => setSelectedLeadId(lead.id)} 
           onNavigate={(page) => setActivePage(page)}
         />;
+      case 'pipeline':
+        return <Pipeline onLeadSelect={(lead) => setSelectedLeadId(lead.id)} />;
       case 'jobs':
         return <Jobs />;
-      case 'pipeline':
-        return (
-          <div className="flex items-center justify-center h-full text-slate-400 p-10">
-            <div className="text-center max-w-md">
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">Pipeline Kanban</h2>
-              <p>The Kanban view is optimized for landscape desktop/iPad Pro usage. Switch orientations or check the Dashboard leads for mobile/portrait management.</p>
-            </div>
-          </div>
-        );
       case 'settings':
         return (
           <div className="p-10 max-w-2xl mx-auto space-y-8">
-             <h1 className="text-2xl font-black text-slate-900">System Settings</h1>
+             <h1 className="text-4xl font-black text-slate-900 tracking-tight">System Settings</h1>
              <div className="space-y-6">
-                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                   <h3 className="font-bold mb-2 text-slate-800">System Information</h3>
-                   <p className="text-sm text-slate-600">IPv4 Deal OS v1.0.4. All systems operational.</p>
-                   <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between text-xs text-slate-400 font-mono">
-                      <span>Engine: Active</span>
-                      <span>Auth: Environment Variable</span>
+                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                   <h3 className="text-xl font-bold mb-4 text-slate-900">Core OS Engine</h3>
+                   <p className="text-sm text-slate-500 leading-relaxed">
+                     IPv4 Deal Sourcing OS v1.1.0 (Production Build). 
+                     Running on high-performance infrastructure with native RIR telemetry ingestion.
+                   </p>
+                   <div className="mt-8 pt-8 border-t border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Health: Stable</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400">BUILD_ID: 99x_ALPHA</span>
+                   </div>
+                </div>
+                
+                <div className="bg-slate-900 p-10 rounded-[2.5rem] text-white">
+                   <h3 className="text-lg font-bold mb-4">Broker API Configuration</h3>
+                   <div className="space-y-4">
+                      <div className="flex justify-between items-center py-3 border-b border-white/5">
+                        <span className="text-xs font-medium text-slate-400">Gemini AI Tier</span>
+                        <span className="text-xs font-bold text-blue-400">Enterprise Pro</span>
+                      </div>
+                      <div className="flex justify-between items-center py-3 border-b border-white/5">
+                        <span className="text-xs font-medium text-slate-400">Grounding Status</span>
+                        <span className="text-xs font-bold text-emerald-400">Search Enabled</span>
+                      </div>
                    </div>
                 </div>
              </div>

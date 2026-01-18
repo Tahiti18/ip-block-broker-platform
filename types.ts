@@ -1,4 +1,3 @@
-
 export enum LeadStage {
   FOUND = 'Found',
   VERIFIED = 'Verified',
@@ -35,6 +34,8 @@ export interface Lead {
   owner: string;
   nextActionDate: string;
   lastUpdated: string;
+  priority: 'High' | 'Medium' | 'Low';
+  notes?: string;
   scoreBreakdown: {
     size: number;
     legacy: number;
