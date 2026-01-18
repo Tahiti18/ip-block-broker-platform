@@ -176,6 +176,6 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Serve the static frontend from the root directory
-# This MUST be mounted last to avoid shadowing API routes
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
+# Serve static files from the root directory
+# In a container environment, /app is our root
+app.mount("/", StaticFiles(directory="/app", html=True), name="static")
