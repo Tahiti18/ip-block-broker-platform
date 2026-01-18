@@ -1,7 +1,6 @@
 import { Lead, JobRun, JobType, LeadStage, JobStatus } from '../types';
 
-// Use the Railway backend URL from environment variables
-const API_BASE = (import.meta as any).env?.VITE_API_URL || '';
+const API_BASE = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.NEXT_PUBLIC_API_BASE_URL || '';
 
 export interface Metrics {
   totalInventoryIps: number;

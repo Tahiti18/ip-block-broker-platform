@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from datetime import datetime
@@ -46,9 +45,9 @@ def health(db: Session = Depends(database.get_db)):
 
 @app.post("/api/ai/analyze")
 async def analyze_lead(payload: dict = Body(...)):
-    api_key = os.getenv("OPENROUTER_API_KEY")
+    api_key = os.getenv("API_KEY")
     if not api_key:
-        return {"error": "AI Engine Unconfigured (OPENROUTER_API_KEY missing)"}
+        return {"error": "AI Engine Unconfigured (API_KEY missing)"}
     
     prompt = f"""
     Analyze this legacy IPv4 Block: {payload.get('cidr')} (Owner: {payload.get('orgName')}).
@@ -128,8 +127,3 @@ def get_lead(id: int, db: Session = Depends(database.get_db)):
         "scoreBreakdown": l.score_breakdown,
         "lastUpdated": l.last_updated
     }
-
-# Serve static files from the 'dist' directory created during the build phase
-dist_path = os.path.join(os.getcwd(), "dist")
-if os.path.exists(dist_path):
-    app.mount("/", StaticFiles(directory=dist_path, html=True), name="static")
