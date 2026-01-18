@@ -1,47 +1,28 @@
-
 # IPv4 Deal Sourcing OS
 
-A high-performance platform for IPv4 brokers to source, score, and manage legacy IP block deals using only public, ToS-compliant telemetry.
+A high-performance platform for IPv4 brokers to source, score, and manage legacy IP block deals using public telemetry and AI insights.
 
-## 🚀 One-Click Deploy: Railway
+## 🚀 Production Deployment: Railway
 
-1.  **Create a New Project** on Railway.
-2.  **Add Services**:
-    *   **PostgreSQL**: Provision a managed database.
-    *   **Redis**: Provision a managed instance for the job queue.
-    *   **FastAPI Backend**: Connect your repo.
-        *   Build Command: `pip install -r requirements.txt`
-        *   Start Command: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
-    *   **RQ Worker**: Same repo as backend.
-        *   Start Command: `python backend/worker.py`
-    *   **Next.js Frontend**: Connect your repo.
-        *   Build Command: `npm run build`
-        *   Start Command: `npm run start`
-3.  **Environment Variables**:
-    *   `DATABASE_URL`: (Railway auto-injects from PG)
-    *   `REDIS_URL`: (Railway auto-injects from Redis)
-    *   `API_KEY`: Your Gemini API Key for AI features.
-    *   `JWT_SECRET`: A secure random string.
-    *   `API_URL`: URL of your FastAPI service.
+This project is optimized for **Railway Nixpacks**. It is a single-service deployment that builds the React frontend and serves it via a FastAPI backend.
 
-## 🚀 One-Click Deploy: Render
+### Prerequisites
+- A Railway account.
+- `OPENROUTER_API_KEY` or `API_KEY` for AI intelligence features.
+- A Postgres database (Railway's managed Postgres is recommended).
 
-1.  **PostgreSQL**: Create a "New PostgreSQL".
-2.  **Redis**: Create a "New Redis".
-3.  **Backend (Web Service)**:
-    *   Build Command: `pip install -r requirements.txt`
-    *   Start Command: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
-4.  **Worker (Background Worker)**:
-    *   Build Command: `pip install -r requirements.txt`
-    *   Start Command: `python backend/worker.py`
-5.  **Frontend (Static Site or Web Service)**:
-    *   Build Command: `npm run build`
-    *   Start Command: `npm run start`
+### One-Click Deploy Logic
+1. Connect your repository to Railway.
+2. Railway will detect the `nixpacks.toml` and `Procfile`.
+3. It will install Node.js, build the frontend (`dist/`), install Python dependencies, and start the FastAPI server.
 
-## 🛠 Demo Mode
-The application includes a built-in "Demo Mode" button in the Admin/Jobs panel. This seeds the database with curated sample data from `/seed/` files, allowing for an immediate "Zero-Key" experience.
+### Environment Variables
+- `DATABASE_URL`: Your Postgres connection string.
+- `API_KEY`: Google Gemini API Key for asset intelligence.
+- `PORT`: Automatically handled by Railway.
 
-## ⚖️ Security & Compliance
-*   **Data Provenance**: Every IP block record includes a `raw_snapshot` field storing the original RDAP/BGP response with a timestamp.
-*   **Legal Ingestion**: No scraping of private registries. Uses standard RDAP bootstrap (RFC 7480) and public BGP feeds.
-*   **Rate Limiting**: Outbound calls are managed via the Worker queue with exponential backoff and persistent caching.
+## 🛠 Tech Stack
+- **Frontend**: React 19, Tailwind CSS, Lucide Icons.
+- **Backend**: FastAPI (Python 3.11), SQLAlchemy.
+- **AI**: Google Gemini (via `@google/genai`).
+- **Build System**: Nixpacks (No Docker required).
