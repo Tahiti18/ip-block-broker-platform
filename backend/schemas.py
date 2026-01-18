@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel
 from typing import List, Optional, Any
 from datetime import datetime
@@ -19,7 +18,7 @@ class LeadUpdate(BaseModel):
     notes: Optional[str]
 
 class LeadResponse(LeadBase):
-    id: int
+    id: str
     lastUpdated: datetime
     class Config:
         from_attributes = True
