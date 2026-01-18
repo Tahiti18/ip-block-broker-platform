@@ -176,6 +176,6 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Serve static files from the root directory
-# In a container environment, /app is our root
-app.mount("/", StaticFiles(directory="/app", html=True), name="static")
+# Robust static file serving from the project root
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+app.mount("/", StaticFiles(directory=ROOT_DIR, html=True), name="static")
