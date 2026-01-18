@@ -176,10 +176,10 @@ def get_all_jobs(db: Session = Depends(database.get_db)):
         "error": j.error
     } for j in jobs]
 
-# Resolve root directory relative to this file's location
-# backend/main.py -> backend -> project_root
+# Robust static file resolution for Docker/Railway environments
+# Current file: /app/backend/main.py -> Base: /app
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Serve static files from the project root (where index.html resides)
+# Only mount if index.html exists in the base directory
 if os.path.exists(os.path.join(BASE_DIR, "index.html")):
     app.mount("/", StaticFiles(directory=BASE_DIR, html=True), name="static")
